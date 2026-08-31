@@ -59,6 +59,7 @@ Turn the user's natural-language request into the smallest safe sequence of NUVI
 ## Error handling
 
 - For `insufficient_scope`, `inactive_membership`, `cross_tenant_access`, `revoked_connection`, or `feature_disabled`, stop the requested operation and direct the user to NUVIO connection management or the host UI as appropriate.
+- If the host reports only `-32603 Internal error` before NUVIO records a tool activity, do not keep retrying. Explain that the saved OAuth connection may be expired or revoked and direct the user to `https://nuvio.kr/host/settings/ai-connections` to complete **재연결 준비**, then reconnect NUVIO from the host's Plugins or Connectors settings.
 - For `validation_failed` or `publish_readiness_failed`, translate the server's blockers into a short correction checklist.
 - For `idempotency_conflict`, do not reuse the key with a different payload.
 - For `audit_failed`, report that NUVIO safely refused or rolled back the operation; do not retry repeatedly.
