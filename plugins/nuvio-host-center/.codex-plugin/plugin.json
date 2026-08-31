@@ -1,0 +1,30 @@
+{
+  "name": "nuvio-host-center",
+  "version": "1.0.0",
+  "description": "내 NUVIO 호스트센터와 프로그램을 안전하게 조회합니다.",
+  "author": {
+    "name": "NUVIO",
+    "url": "https://nuvio.kr"
+  },
+  "homepage": "https://nuvio.kr/host/settings/ai-connections",
+  "repository": "https://github.com/bananaggong/nuvio-plugins",
+  "keywords": ["nuvio", "host-center", "program-operations"],
+  "interface": {
+    "displayName": "NUVIO Host Center",
+    "shortDescription": "내 호스트센터와 프로그램을 안전하게 조회합니다.",
+    "longDescription": "NUVIO 로그인과 센터별 동의를 거쳐 내 호스트센터와 프로그램을 조회합니다. 신청자 개인정보와 DB 자격 증명은 제공하지 않습니다.",
+    "developerName": "NUVIO",
+    "category": "Business and Operations",
+    "capabilities": ["Read"],
+    "websiteURL": "https://nuvio.kr",
+    "privacyPolicyURL": "https://nuvio.kr/privacy",
+    "termsOfServiceURL": "https://nuvio.kr/terms",
+    "defaultPrompt": [
+      "내가 관리할 수 있는 NUVIO 호스트센터를 보여줘.",
+      "선택한 센터의 프로그램 목록을 보여줘.",
+      "이 프로그램의 공개 준비 상태를 확인해줘."
+    ],
+    "brandColor": "#FE701E"
+  },
+  "apps": "./.app.json"
+}

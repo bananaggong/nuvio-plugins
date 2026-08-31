@@ -1,0 +1,20 @@
+{
+  "name": "nuvio",
+  "interface": {
+    "displayName": "NUVIO"
+  },
+  "plugins": [
+    {
+      "name": "nuvio-host-center",
+      "source": {
+        "source": "local",
+        "path": "./plugins/nuvio-host-center"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Business and Operations"
+    }
+  ]
+}
