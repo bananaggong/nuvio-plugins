@@ -13,7 +13,7 @@ codex plugin add nuvio-host-center@nuvio
 
 ChatGPT Desktop을 다시 시작한 뒤 Plugins에서 `NUVIO Host Center`를 활성화합니다. 최초 설치 또는 사용 시 NUVIO 로그인 화면에서 연결할 호스트센터와 현재 역할에 허용된 권한을 승인합니다.
 
-사용자는 OAuth `client_id`, client secret, access token 또는 DB 자격 증명을 입력하지 않습니다. OAuth client 설정은 `.app.json`이 참조하는 사전 등록 connection에서 관리합니다.
+사용자는 OAuth `client_id`, callback port, client secret, access token 또는 DB 자격 증명을 입력하지 않습니다. ChatGPT connection은 `.app.json`, Codex CLI의 사전 등록 public client와 고정 loopback callback은 `.mcp.json`에서 관리합니다. Codex가 요청하는 identity scope도 `openid`, `email`, `offline_access`로 제한합니다.
 
 ## 기존 설치 업데이트
 
@@ -23,6 +23,8 @@ ChatGPT Desktop을 다시 시작한 뒤 Plugins에서 `NUVIO Host Center`를 활
 codex plugin marketplace upgrade nuvio
 codex plugin add nuvio-host-center@nuvio
 ```
+
+버전 `1.1.2` 이하이거나 `invalid redirect_uri`가 나온 사용자는 `codex plugin marketplace upgrade nuvio` → `codex mcp remove nuvio` → `codex plugin add nuvio-host-center@nuvio` 순서로 실행합니다. 기존 전역 MCP 설정은 plugin보다 우선하므로 제거해야 하며, 이 명령은 직접 추가한 항목만 지우고 plugin 자체는 삭제하지 않습니다. OAuth 동의는 새로 진행합니다.
 
 서버의 MCP tool만 추가된 경우에는 보통 plugin 재설치가 필요 없지만, 새 쓰기 scope가 필요한 기존 read-only 연결은 NUVIO 연결 관리에서 철회 후 재연결해야 할 수 있습니다.
 

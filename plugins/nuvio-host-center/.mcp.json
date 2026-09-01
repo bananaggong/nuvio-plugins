@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "nuvio": {
+      "type": "http",
+      "url": "https://nuvio.kr/mcp",
+      "oauth_resource": "https://nuvio.kr/mcp",
+      "scopes": ["openid", "email", "offline_access"],
+      "oauth": {
+        "clientId": "8a49e191-bea2-4dbf-b721-3940f2b5b74d",
+        "callbackUrl": "http://127.0.0.1:10230/callback/EwGizh6YP3Nh",
+        "callbackPort": 10230
+      }
+    }
+  }
+}

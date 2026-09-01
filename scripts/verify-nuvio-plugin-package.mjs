@@ -5,6 +5,7 @@ import { dirname, join, relative, resolve } from "node:path";
 const PACKAGE_FILES = [
   { path: ".codex-plugin/plugin.json", mode: "json" },
   { path: ".app.json", mode: "json" },
+  { path: ".mcp.json", mode: "json" },
   { path: "assets/icon.png", mode: "binary" },
   { path: "assets/logo.png", mode: "binary" },
   { path: "README.md", mode: "text" },
@@ -76,7 +77,8 @@ function inspectPackage(root, marketplace) {
 
   const plugin = parseJson(readFileSync(resolve(root, ".codex-plugin/plugin.json"), "utf8"), "plugin.json");
   const app = parseJson(readFileSync(resolve(root, ".app.json"), "utf8"), ".app.json");
-  assertPluginShape(plugin, app, root);
+  const mcp = parseJson(readFileSync(resolve(root, ".mcp.json"), "utf8"), ".mcp.json");
+  assertPluginShape(plugin, app, mcp, root);
   if (!existsSync(marketplace)) fail(`Marketplace file is missing: ${marketplace}`);
   const marketplaceValue = parseJson(readFileSync(marketplace, "utf8"), marketplace);
   assertMarketplaceShape(marketplaceValue);
@@ -129,13 +131,13 @@ function assertExactPackageFiles(root) {
   }
 }
 
-function assertPluginShape(plugin, app, root) {
+function assertPluginShape(plugin, app, mcp, root) {
   if (plugin.name !== "nuvio-host-center") fail(`Unexpected plugin name in ${root}`);
   if (typeof plugin.version !== "string" || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u.test(plugin.version)) {
     fail(`Plugin version is not strict semver: ${String(plugin.version)}`);
   }
-  if (plugin.apps !== "./.app.json" || plugin.skills !== "./skills/") {
-    fail("plugin.json must retain ./skills/ and ./.app.json bindings");
+  if (plugin.apps !== "./.app.json" || plugin.mcpServers !== "./.mcp.json" || plugin.skills !== "./skills/") {
+    fail("plugin.json must retain ./skills/, ./.app.json, and ./.mcp.json bindings");
   }
   if (plugin.author?.email !== "help@nuvio.kr") fail("plugin author support email is missing");
   if (plugin.interface?.composerIcon !== "./assets/icon.png" || plugin.interface?.logo !== "./assets/logo.png") {
@@ -155,6 +157,20 @@ function assertPluginShape(plugin, app, root) {
   }
   if (!app.apps || typeof app.apps !== "object" || Object.keys(app.apps).length !== 1) {
     fail(".app.json must contain exactly one registered MCP connection mapping");
+  }
+  const server = mcp.mcpServers?.nuvio;
+  if (server?.type !== "http" || server.url !== "https://nuvio.kr/mcp" || server.oauth_resource !== "https://nuvio.kr/mcp") {
+    fail(".mcp.json must bind the NUVIO Streamable HTTP resource exactly");
+  }
+  if (stableStringify(server.scopes) !== stableStringify(["openid", "email", "offline_access"])) {
+    fail(".mcp.json must request only the reviewed OIDC identity and refresh scopes");
+  }
+  if (
+    server.oauth?.clientId !== "8a49e191-bea2-4dbf-b721-3940f2b5b74d"
+    || server.oauth.callbackUrl !== "http://127.0.0.1:10230/callback/EwGizh6YP3Nh"
+    || server.oauth.callbackPort !== 10230
+  ) {
+    fail(".mcp.json must retain the reviewed public client and fixed loopback callback");
   }
 }
 

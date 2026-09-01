@@ -20,7 +20,7 @@ const PLUGIN_NAME = "nuvio-host-center";
 const MARKETPLACE_NAME = "nuvio";
 const OLD_COMMIT = "44706eefadcd0b90e12851aed43b1e4c42d4febb";
 const OLD_VERSION_PATTERN = /^1\.1\.0(?:\+|$)/u;
-const CURRENT_VERSION_PATTERN = /^1\.1\.2(?:\+|$)/u;
+const CURRENT_VERSION_PATTERN = /^1\.1\.3(?:\+|$)/u;
 const TEXT_EXTENSIONS = new Set([".json", ".md", ".toml", ".txt", ".yaml", ".yml"]);
 const SECRET_PATTERNS = [
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----/u, "private key"],
@@ -60,7 +60,7 @@ const gitBinary = resolveExecutable(options.gitBin ?? "git");
 const currentManifest = readJson(join(canonicalPluginRoot, ".codex-plugin", "plugin.json"));
 const currentVersion = currentManifest.version;
 if (!CURRENT_VERSION_PATTERN.test(currentVersion)) {
-  fail(`Expected the canonical working-tree plugin to be 1.1.2+, received ${String(currentVersion)}`);
+  fail(`Expected the canonical working-tree plugin to be 1.1.3+, received ${String(currentVersion)}`);
 }
 assertNoSecretsInTree(canonicalPluginRoot, "canonical package");
 
@@ -94,6 +94,7 @@ if (options.json) {
   console.log(`NUVIO plugin lifecycle verified: ${finalResult.oldVersion} -> ${finalResult.currentVersion}`);
   console.log(`Codex CLI: ${finalResult.codexVersion}`);
   console.log("isolated old install, working-tree update, fresh-process pickup, remove, and reinstall: ok");
+  console.log("legacy global MCP override precedence and plugin fallback recovery: ok");
   console.log("stable app mapping, -32603 recovery instruction, secret absence, and global-state guard: ok");
   if (options.keepTemp) console.log(`isolated artifacts retained at: ${suiteRoot}`);
 }
@@ -117,6 +118,7 @@ function runLifecycle() {
   if (!OLD_VERSION_PATTERN.test(oldVersion)) fail(`Expected old plugin 1.1.0+, received ${String(oldVersion)}`);
   const oldApp = readJson(join(stagedPluginRoot, ".app.json"));
   const currentApp = readJson(join(canonicalPluginRoot, ".app.json"));
+  const currentMcp = readJson(join(canonicalPluginRoot, ".mcp.json"));
   assertDeepEqual(currentApp, oldApp, ".app.json changed between 1.1.0 and the canonical working tree");
   assertNoSecretsInTree(stagedPluginRoot, "old package");
 
@@ -139,10 +141,30 @@ function runLifecycle() {
   const freshCurrentList = runCodex(["plugin", "list", "--available", "--json"], "fresh-list-current").stdout;
   assertPluginList(freshCurrentList, currentVersion, true, "fresh-process current pickup");
   const currentInstalledRoot = findInstalledPackage(isolation.codexHome, currentVersion);
-  assertDeepEqual(readJson(join(currentInstalledRoot, ".app.json")), currentApp, "Installed 1.1.2+ .app.json drifted");
+  assertDeepEqual(readJson(join(currentInstalledRoot, ".app.json")), currentApp, "Installed 1.1.3+ .app.json drifted");
+  assertDeepEqual(readJson(join(currentInstalledRoot, ".mcp.json")), currentMcp, "Installed 1.1.3+ .mcp.json drifted");
   assertRecoveryInstruction(currentInstalledRoot);
   assertNoSecretsInTree(currentInstalledRoot, "installed current package");
   assertNoCredentialPersistence(isolation.codexHome);
+
+  runCodex(["mcp", "add", "nuvio", "--url", "https://stale.invalid/mcp"], "add-legacy-global-mcp-override");
+  assertMcpUrl(
+    runCodex(["mcp", "get", "nuvio", "--json"], "get-legacy-global-mcp-override").stdout,
+    "https://stale.invalid/mcp",
+    "legacy global MCP override precedence",
+  );
+  runCodex(["plugin", "add", `${PLUGIN_NAME}@${MARKETPLACE_NAME}`, "--json"], "reinstall-with-legacy-global-mcp-override");
+  assertMcpUrl(
+    runCodex(["mcp", "get", "nuvio", "--json"], "get-mcp-after-plugin-reinstall").stdout,
+    "https://stale.invalid/mcp",
+    "plugin reinstall must not silently replace a global MCP override",
+  );
+  runCodex(["mcp", "remove", "nuvio"], "remove-legacy-global-mcp-override");
+  assertMcpUrl(
+    runCodex(["mcp", "get", "nuvio", "--json"], "get-plugin-mcp-fallback").stdout,
+    "https://nuvio.kr/mcp",
+    "plugin MCP fallback after global override removal",
+  );
 
   runCodex(["plugin", "remove", `${PLUGIN_NAME}@${MARKETPLACE_NAME}`, "--json"], "remove-current");
   const removedList = runCodex(["plugin", "list", "--available", "--json"], "fresh-list-removed").stdout;
@@ -157,6 +179,7 @@ function runLifecycle() {
   const reinstalledRoot = findInstalledPackage(isolation.codexHome, currentVersion);
   assertRecoveryInstruction(reinstalledRoot);
   assertDeepEqual(readJson(join(reinstalledRoot, ".app.json")), currentApp, "Reinstalled .app.json drifted");
+  assertDeepEqual(readJson(join(reinstalledRoot, ".mcp.json")), currentMcp, "Reinstalled .mcp.json drifted");
   assertNoSecretsInTree(isolation.codexHome, "isolated Codex home");
   assertNoCredentialPersistence(isolation.codexHome);
 
@@ -168,9 +191,18 @@ function runLifecycle() {
     currentVersion,
     appMappingStable: true,
     recoveryInstructionPresent: true,
+    legacyGlobalOverrideRecovery: true,
     secretsAbsent: true,
     globalStateUnchanged: true,
-    lifecycle: ["install-old", "update-working-tree", "fresh-process-pickup", "remove", "reinstall"],
+    lifecycle: [
+      "install-old",
+      "update-working-tree",
+      "fresh-process-pickup",
+      "legacy-global-mcp-override",
+      "plugin-fallback-recovery",
+      "remove",
+      "reinstall",
+    ],
   };
 }
 
@@ -268,6 +300,14 @@ function assertPluginList(output, version, expectedInstalled, label) {
   if (installed === undefined) fail(`${label} did not expose an installed-state field`);
   if (installed !== expectedInstalled) {
     fail(`${label} installed state was ${String(installed)}, expected ${String(expectedInstalled)}`);
+  }
+}
+
+function assertMcpUrl(output, expectedUrl, label) {
+  const value = parseJsonOutput(output, label);
+  const actualUrl = value?.transport?.url;
+  if (actualUrl !== expectedUrl) {
+    fail(`${label} exposed ${String(actualUrl)}, expected ${expectedUrl}`);
   }
 }
 
