@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "plugin": "nuvio-host-center",
+  "version": "1.1.2+codex.20260901",
+  "canonicalSource": "nuvio-web/plugins/nuvio-host-center",
+  "files": {
+    ".codex-plugin/plugin.json": {
+      "mode": "json",
+      "sha256": "sha256:af62c8004287313ee1ccf37371a076b4de2faa726a0e7b4dee9ac4f7c834f1ca"
+    },
+    ".app.json": {
+      "mode": "json",
+      "sha256": "sha256:7a35a1c14e7b15ee733d31ce513edfbc79911421c2d8facad424e2bfa7589ec2"
+    },
+    "assets/icon.png": {
+      "mode": "binary",
+      "sha256": "sha256:3b736cdc1c0425a3438272521a9c8e42e90c8da886149bdc3342583e47bb6ec6"
+    },
+    "assets/logo.png": {
+      "mode": "binary",
+      "sha256": "sha256:b93064ec361eab8bc9f33af20f1d3ab8e25b337fb0ddfe34f1cebc25a3df6880"
+    },
+    "README.md": {
+      "mode": "text",
+      "sha256": "sha256:8d9782de5c5ffdba06231a05163d2aded44dec18433d5040427ad4ab8aab94e8"
+    },
+    "skills/nuvio-host-center-operations/SKILL.md": {
+      "mode": "text",
+      "sha256": "sha256:5cf1185f9ef1d9941627f4f52bbea94cea179c8f8c240dfab9980a02059e7940"
+    }
+  },
+  "marketplace": {
+    "path": ".agents/plugins/marketplace.json",
+    "sha256": "sha256:5293480304d8e7648e064c243a438a36fa585650e8146827ca053e23de46f5c4"
+  },
+  "sourceHash": "sha256:1d18d7b8573b67f996c1a23326f04275a2d746ddc92d031d6d6771285c0877f5"
+}

@@ -1,0 +1,5 @@
+plugins/nuvio-host-center/** text eol=lf
+plugins/nuvio-host-center/assets/*.png binary
+.agents/plugins/marketplace.json text eol=lf
+release/*.json text eol=lf
+scripts/verify-nuvio-plugin-*.mjs text eol=lf

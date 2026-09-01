@@ -41,10 +41,11 @@ Turn the user's natural-language request into the smallest safe sequence of NUVI
 ### Update a program draft
 
 1. Resolve the exact program and call `programs.get` immediately before editing.
-2. Preserve fields the user did not ask to change. Build the full strict draft payload from the current program plus the requested changes.
-3. Call `programs.update_draft` with the returned `revision` as `expected_version` and a new `idempotency_key` for the exact update payload.
+2. Send only the fields the user asked to change in the strict `patch` object. Omitted fields are preserved by NUVIO; use `null` only where the live tool schema explicitly advertises an allowed clear operation.
+3. Never put identity, ownership, publication state, applicant data, or other non-schema fields in `patch`. Call `programs.update_draft` with the returned `revision` as `expected_version` and a new `idempotency_key` for the exact patch.
 4. If `version_conflict` occurs, fetch the latest version and explain what changed. Do not silently overwrite or automatically reapply the edit.
-5. After success, report the new revision and validate readiness when relevant.
+5. `programs.update_draft` is only for unpublished drafts. If the program is already published or archived, stop; do not attempt to turn it back into a draft or bypass the trusted publication lifecycle.
+6. After success, report the new revision and validate readiness when relevant.
 
 ### Publish or archive
 
@@ -58,9 +59,11 @@ Turn the user's natural-language request into the smallest safe sequence of NUVI
 
 ## Error handling
 
-- For `insufficient_scope`, `inactive_membership`, `cross_tenant_access`, `revoked_connection`, or `feature_disabled`, stop the requested operation and direct the user to NUVIO connection management or the host UI as appropriate.
-- If the host reports only `-32603 Internal error` before NUVIO records a tool activity, do not keep retrying. Explain that the saved OAuth connection may be expired or revoked and direct the user to `https://nuvio.kr/host/settings/ai-connections` to complete **재연결 준비**, then reconnect NUVIO from the host's Plugins or Connectors settings.
+- For `invalid_token`, `expired_token`, or `revoked_connection`, stop retrying and direct the user to `https://nuvio.kr/host/settings/ai-connections`. Tell them to use **재연결 시작**; if the page still shows the connection as active, use **연결 철회** once, then reconnect NUVIO from the host's Plugins or Connectors settings.
+- For `insufficient_scope`, `inactive_membership`, `cross_tenant_access`, or `feature_disabled`, stop the requested operation and direct the user to NUVIO connection management or the host UI as appropriate. Do not mislabel a membership or rollout problem as an OAuth failure.
+- If the host reports only `-32603 Internal error` before NUVIO records a tool activity, do not keep retrying. Explain that the saved OAuth connection may be expired or revoked and direct the user to the same NUVIO reconnection flow.
 - For `validation_failed` or `publish_readiness_failed`, translate the server's blockers into a short correction checklist.
+- For `approval_required` from `programs.update_draft`, explain that published and archived content is fail-closed and must be handled in the NUVIO host UI until a separately approved revision workflow is available.
 - For `idempotency_conflict`, do not reuse the key with a different payload.
 - For `audit_failed`, report that NUVIO safely refused or rolled back the operation; do not retry repeatedly.
 - For rate limits or transient internal errors, make at most one safe retry when the payload and idempotency key are unchanged, then report the failure.
